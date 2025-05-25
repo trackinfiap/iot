@@ -31,6 +31,9 @@ Este protótipo simula um sistema de gerenciamento inteligente de motos utilizan
 -   **JSON**: Formato de dados
 -   **Firebase**: Montagem do dashboard
 
+### Link PITCH - YouTube
+- https://youtu.be/tFLwiapUUiE?si=OhGFE0eqJH3WFoXn
+
 🔧 Como Usar no Wokwi
 ---------------------
 
@@ -46,7 +49,7 @@ No código, altere as seguintes variáveis:
 const char* apiUrl = "http://172.178.12.27:8080/api/rfid"; // No momento em que está lendo, essa VM foi desativada
 
 ```
-Clone a API em: linkapi
+Clone a API e configure em: [API Dotnet](https://github.com/trackinfiap/dotnet)
 
 E substitua por:
 ```
