@@ -137,6 +137,13 @@ Para a montagem do dashboard (análise de leituras) foi utilizado o Firebase par
 - Inicie o servidor
 - Acesse a URL disponibilizada (provavelmente localhost:5500)
 
+### Como testar as leituras?
+- Você deve clonar o repositório, instalar os pacotes que estão em requirements.txt:
+```
+pip install -r requirements.txt
+```
+- Em seguida deve rodar o projeto, que irá te guiar através de um menu interativo
+
 🔮 Aplicações Futuras
 ---------------------
 
