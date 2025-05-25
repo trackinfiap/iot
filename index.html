@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Trackin - Leituras RFId</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);  
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+
+        .metric-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .success-rate {
+            color: #4CAF50;
+        }
+
+        .error-rate {
+            color: #f44336;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .readings-log {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .log-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .log-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-rfid {
+            font-family: monospace;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .log-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .log-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏍️ Dashboard Trackin</h1>
+            <p>Sistema de Rastreamento IoT</p>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Sistema Online</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">📊</div>
+                <div class="metric-value" id="totalLeituras">0</div>
+                <div class="metric-label">Total de Leituras</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">✅</div>
+                <div class="metric-value success-rate" id="leiturasSucesso">0</div>
+                <div class="metric-label">Leituras com Sucesso</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">❌</div>
+                <div class="metric-value error-rate" id="leiturasErro">0</div>
+                <div class="metric-label">Leituras com Erro</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">📈</div>
+                <div class="metric-value success-rate" id="taxaSucesso">0%</div>
+                <div class="metric-label">Taxa de Sucesso</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">📈 Leituras ao Longo do Tempo</div>
+                <canvas id="timeChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">🥧 Status das Leituras</div>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="readings-log">
+            <div class="log-title">📋 Últimas Leituras</div>
+            <div id="logContainer">
+                <div class="no-data">Aguardando dados...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyANzp-8EOc99K1O4_AtEhCfvF3270Gujqg",
+            authDomain: "trackin-dashboard.firebaseapp.com",
+            databaseURL: "https://trackin-dashboard-default-rtdb.firebaseio.com",
+            projectId: "trackin-dashboard",
+            storageBucket: "trackin-dashboard.firebasestorage.app",
+            messagingSenderId: "1039792525907",
+            appId: "1:1039792525907:web:5e1e54c54f5a9a8e33aca6",
+            measurementId: "G-S6R4PWVN2X"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let timeChart;
+        let statusChart;
+        let readings = [];
+
+        const totalLeiturasEl = document.getElementById('totalLeituras');
+        const leiturasSucessoEl = document.getElementById('leiturasSucesso');
+        const leiturasErroEl = document.getElementById('leiturasErro');
+        const taxaSucessoEl = document.getElementById('taxaSucesso');
+        const logContainer = document.getElementById('logContainer');
+
+        function initCharts() {
+            const timeCtx = document.getElementById('timeChart').getContext('2d');
+            timeChart = new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Leituras por Minuto',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sucesso', 'Erro'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#4CAF50', '#f44336'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMetrics(metrics) {
+            totalLeiturasEl.textContent = metrics.totalLeituras || 0;
+            leiturasSucessoEl.textContent = metrics.leiturasSucesso || 0;
+            leiturasErroEl.textContent = metrics.leiturasErro || 0;
+            taxaSucessoEl.textContent = (metrics.taxaSucesso || 0).toFixed(1) + '%';
+
+            statusChart.data.datasets[0].data = [
+                metrics.leiturasSucesso || 0,
+                metrics.leiturasErro || 0
+            ];
+            statusChart.update();
+        }
+
+        function updateReadingsLog(readings) {
+            const sortedReadings = Object.entries(readings)
+                .sort(([a], [b]) => parseInt(b) - parseInt(a))
+                .slice(0, 10);
+
+            if (sortedReadings.length === 0) {
+                logContainer.innerHTML = '<div class="no-data">Nenhuma leitura encontrada</div>';
+                return;
+            }
+
+            logContainer.innerHTML = sortedReadings
+                .map(([timestamp, reading]) => {
+                    const date = new Date(parseInt(timestamp));
+                    const timeStr = date.toLocaleTimeString('pt-BR');
+                    const statusClass = reading.apiSuccess ? 'status-success' : 'status-error';
+                    const statusText = reading.apiSuccess ? 'Sucesso' : 'Erro';
+
+                    return `
+                        <div class="log-item">
+                            <div>
+                                <div class="log-rfid">${reading.rfid}</div>
+                                <div class="log-time">${timeStr}</div>
+                            </div>
+                            <div class="log-status ${statusClass}">${statusText}</div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        function updateTimeChart(readings) {
+            const now = new Date();
+            const timeSlots = {};
+
+            Object.entries(readings).forEach(([timestamp, reading]) => {
+                const date = new Date(parseInt(timestamp));
+                const timeKey = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                timeSlots[timeKey] = (timeSlots[timeKey] || 0) + 1;
+            });
+
+            const labels = Object.keys(timeSlots).slice(-10);
+            const data = Object.values(timeSlots).slice(-10);
+
+            timeChart.data.labels = labels;
+            timeChart.data.datasets[0].data = data;
+            timeChart.update();
+        }
+
+        function setupFirebaseListeners() {
+            database.ref('metricas').on('value', (snapshot) => {
+                const metrics = snapshot.val();
+                if (metrics) {
+                    updateMetrics(metrics);
+                }
+            });
+
+            database.ref('leituras').on('value', (snapshot) => {
+                const readings = snapshot.val();
+                if (readings) {
+                    updateReadingsLog(readings);
+                    updateTimeChart(readings);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            setupFirebaseListeners();
+        });
+    </script>
+</body>
+</html>
