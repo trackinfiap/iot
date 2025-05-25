@@ -128,6 +128,12 @@ Para a montagem do dashboard (análise de leituras) foi utilizado o Firebase par
 - Gráfico de leitura por tempo
 - Histórico de leituras
 
+### Como ver o dashboard?
+- Para visualização do dashboard você precisa clonar o projeto, abrir o Index HTML
+- Instale a extensão Live Server
+- Inicie o servidor
+- Acesse a URL disponibilizada (provavelmente localhost:5500)
+
 🔮 Aplicações Futuras
 ---------------------
 
